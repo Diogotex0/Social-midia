@@ -8,9 +8,9 @@ const supabaseAdmin = createClient(
 
 export async function GET(
   _req: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
-  const { token } = params;
+  const { token } = await params;
 
   const { data: client, error: clientError } = await supabaseAdmin
     .from("clients")

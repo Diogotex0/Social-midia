@@ -8,9 +8,9 @@ const supabaseAdmin = createClient(
 
 export async function POST(
   req: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
-  const { token } = params;
+  const { token } = await params;
   const { contentId, action, comment } = await req.json();
 
   if (!contentId || !action || !["approve", "reject"].includes(action)) {
