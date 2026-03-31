@@ -4,8 +4,8 @@ import { PortalClientView } from "./portal-client-view";
 
 export const dynamic = "force-dynamic";
 
-export default async function PortalPage({ params }: { params: { token: string } }) {
-  const { token } = params;
+export default async function PortalPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
 
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
