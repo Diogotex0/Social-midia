@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     supabase.from("contents").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "delayed"),
     supabase.from("contents").select("*, clients(name, color)").eq("user_id", user.id).in("status", ["planned", "in_production"]).order("scheduled_at", { ascending: true }).limit(5),
     supabase.from("contents").select("*, clients(name, color)").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
-    supabase.from("finances").select("amount, status").eq("user_id", user.id).eq("month", now.getMonth() + 1).eq("year", now.getFullYear()),
+    supabase.from("finances").select("*").eq("user_id", user.id).eq("month", now.getMonth() + 1).eq("year", now.getFullYear()),
     supabase.from("notifications").select("*").eq("user_id", user.id).eq("read", false).order("created_at", { ascending: false }).limit(5),
   ]);
 
