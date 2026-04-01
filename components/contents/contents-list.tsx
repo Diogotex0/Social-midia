@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { CONTENT_STATUSES, PLATFORMS, FORMATS } from "@/types";
@@ -53,6 +53,11 @@ export function ContentsList({ initialContents, clients }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [contents, setContents] = useState(initialContents);
+
+  useEffect(() => {
+    setContents(initialContents);
+  }, [initialContents]);
+
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterClient, setFilterClient] = useState("all");
