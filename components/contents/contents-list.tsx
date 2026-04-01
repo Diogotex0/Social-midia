@@ -89,7 +89,17 @@ export function ContentsList({ initialContents, clients }: Props) {
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    // Use current month if it has content, otherwise use first available month
+    const months = Array.from(new Set(
+      initialContents
+        .filter(c => c.scheduled_at)
+        .map(c => {
+          const d = new Date(c.scheduled_at!);
+          return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        })
+    )).sort();
+    return months.includes(currentYM) ? currentYM : (months[0] ?? "all");
   });
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterClient, setFilterClient] = useState("all");
