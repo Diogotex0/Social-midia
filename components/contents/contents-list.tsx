@@ -168,7 +168,7 @@ export function ContentsList({ initialContents, clients }: Props) {
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Conteúdo</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Cliente</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Plataforma</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden xl:table-cell">Data</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Data</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Aprovação</th>
                 <th className="w-10 px-4 py-3" />
@@ -199,7 +199,7 @@ export function ContentsList({ initialContents, clients }: Props) {
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <span className="text-sm">{platformInfo?.label ?? content.platform}</span>
                     </td>
-                    <td className="px-4 py-3 hidden xl:table-cell">
+                    <td className="px-4 py-3 hidden md:table-cell">
                       {content.scheduled_at ? (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Calendar className="w-3 h-3" />
