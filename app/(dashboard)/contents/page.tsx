@@ -14,7 +14,7 @@ export default async function ContentsPage() {
       .from("contents")
       .select("*, clients(id, name, color)")
       .eq("user_id", user.id)
-      .order("scheduled_at", { ascending: false }),
+      .order("scheduled_at", { ascending: true, nullsFirst: false }),
     supabase
       .from("clients")
       .select("id, name, color")
