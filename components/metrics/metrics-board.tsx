@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Metric } from "@/types";
@@ -135,6 +135,8 @@ export function MetricsBoard({ initialMetrics, clients }: { initialMetrics: Metr
   const router = useRouter();
   const { toast } = useToast();
   const [metrics, setMetrics] = useState(initialMetrics);
+
+  useEffect(() => { setMetrics(initialMetrics); }, [initialMetrics]);
   const [openForm, setOpenForm] = useState(false);
   const [editingMetric, setEditingMetric] = useState<MetricWithContent | undefined>();
 

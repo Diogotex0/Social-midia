@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { FINANCE_STATUSES, MONTH_NAMES } from "@/lib/utils";
@@ -31,6 +31,8 @@ export function FinancesBoard({ initialFinances, clients, currentMonth, currentY
   const router = useRouter();
   const { toast } = useToast();
   const [finances, setFinances] = useState(initialFinances);
+
+  useEffect(() => { setFinances(initialFinances); }, [initialFinances]);
   const [month, setMonth] = useState(currentMonth);
   const [year, setYear] = useState(currentYear);
   const [loading, setLoading] = useState<string | null>(null);

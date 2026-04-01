@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Notification } from "@/types";
 import { formatRelativeTime } from "@/lib/utils";
@@ -27,6 +27,8 @@ const TYPE_CONFIG = {
 export function NotificationsList({ initialNotifications }: { initialNotifications: NotifWithClient[] }) {
   const { toast } = useToast();
   const [notifications, setNotifications] = useState(initialNotifications);
+
+  useEffect(() => { setNotifications(initialNotifications); }, [initialNotifications]);
 
   async function markAllRead() {
     const supabase = createClient();

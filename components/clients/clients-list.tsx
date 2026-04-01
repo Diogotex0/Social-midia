@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { Client } from "@/types";
@@ -40,6 +40,8 @@ export function ClientsList({ initialClients, userId }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [clients, setClients] = useState(initialClients);
+
+  useEffect(() => { setClients(initialClients); }, [initialClients]);
   const [search, setSearch] = useState("");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");

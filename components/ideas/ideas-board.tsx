@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import type { Idea } from "@/types";
@@ -25,6 +25,8 @@ export function IdeasBoard({ initialIdeas, clients }: { initialIdeas: IdeaWithCl
   const router = useRouter();
   const { toast } = useToast();
   const [ideas, setIdeas] = useState(initialIdeas);
+
+  useEffect(() => { setIdeas(initialIdeas); }, [initialIdeas]);
   const [search, setSearch] = useState("");
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
   const [filterConverted, setFilterConverted] = useState<"all" | "pending" | "converted">("all");
