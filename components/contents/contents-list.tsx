@@ -46,27 +46,21 @@ function getWeekGroup(scheduledAt: string | null): { key: string; label: string 
   if (!scheduledAt) return { key: "sem-data", label: "Sem data definida" };
 
   const date = new Date(scheduledAt);
-  const day = date.getUTCDate();
-  const month = date.toLocaleDateString("pt-BR", { month: "long", timeZone: "UTC" });
-  const year = date.getUTCFullYear();
+  // Get Monday of this week (UTC)
+  const dayOfWeek = date.getUTCDay(); // 0=Sun, 1=Mon...
+  const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  const monday = new Date(date);
+  monday.setUTCDate(date.getUTCDate() + diffToMonday);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
 
-  let weekNum: number;
-  let startDay: number;
-  let endDay: number;
+  const key = `${monday.getUTCFullYear()}-${String(monday.getUTCMonth() + 1).padStart(2, "0")}-${String(monday.getUTCDate()).padStart(2, "0")}`;
 
-  if (day <= 7) {
-    weekNum = 1; startDay = 1; endDay = 7;
-  } else if (day <= 14) {
-    weekNum = 2; startDay = 8; endDay = 14;
-  } else if (day <= 21) {
-    weekNum = 3; startDay = 15; endDay = 21;
-  } else {
-    weekNum = 4; startDay = 22;
-    endDay = new Date(year, date.getUTCMonth() + 1, 0).getDate();
-  }
+  const fmt = (d: Date) => d.toLocaleDateString("pt-BR", {
+    day: "numeric", month: "long", timeZone: "UTC"
+  });
 
-  const key = `${year}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-w${weekNum}`;
-  const label = `Semana ${weekNum} — ${startDay} a ${endDay} de ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
+  const label = `${fmt(monday)} – ${fmt(sunday)} de ${sunday.getUTCFullYear()}`;
   return { key, label };
 }
 
