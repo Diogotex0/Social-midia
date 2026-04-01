@@ -42,6 +42,34 @@ interface Props {
   clients: ClientRef[];
 }
 
+function getWeekGroup(scheduledAt: string | null): { key: string; label: string } {
+  if (!scheduledAt) return { key: "sem-data", label: "Sem data definida" };
+
+  const date = new Date(scheduledAt);
+  const day = date.getUTCDate();
+  const month = date.toLocaleDateString("pt-BR", { month: "long", timeZone: "UTC" });
+  const year = date.getUTCFullYear();
+
+  let weekNum: number;
+  let startDay: number;
+  let endDay: number;
+
+  if (day <= 7) {
+    weekNum = 1; startDay = 1; endDay = 7;
+  } else if (day <= 14) {
+    weekNum = 2; startDay = 8; endDay = 14;
+  } else if (day <= 21) {
+    weekNum = 3; startDay = 15; endDay = 21;
+  } else {
+    weekNum = 4; startDay = 22;
+    endDay = new Date(year, date.getUTCMonth() + 1, 0).getDate();
+  }
+
+  const key = `${year}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-w${weekNum}`;
+  const label = `Semana ${weekNum} — ${startDay} a ${endDay} de ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
+  return { key, label };
+}
+
 const APPROVAL_INFO: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   draft:    { label: "Rascunho",  color: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",   icon: <FileText className="w-3 h-3" /> },
   pending:  { label: "Aguard. aprovação", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", icon: <Clock className="w-3 h-3" /> },
@@ -160,127 +188,156 @@ export function ContentsList({ initialContents, clients }: Props) {
           </Select>
         </div>
 
-        {/* Table */}
-        <div className="rounded-xl border border-border overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-secondary/30">
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Conteúdo</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Cliente</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Plataforma</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Data</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Aprovação</th>
-                <th className="w-10 px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((content, idx) => {
-                const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
-                const platformInfo = PLATFORMS.find(p => p.value === content.platform);
-                const approvalKey = (content.approval_status ?? "draft") as keyof typeof APPROVAL_INFO;
-                const approvalInfo = APPROVAL_INFO[approvalKey] ?? APPROVAL_INFO.draft;
-                const isRejected = approvalKey === "rejected";
+        {/* Grouped by week */}
+        {filtered.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground text-sm border border-border rounded-xl">
+            Nenhum conteúdo encontrado
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {(() => {
+              // Group by week
+              const groups: Record<string, { label: string; items: typeof filtered }> = {};
+              filtered.forEach((c) => {
+                const { key, label } = getWeekGroup(c.scheduled_at ?? null);
+                if (!groups[key]) groups[key] = { label, items: [] };
+                groups[key].items.push(c);
+              });
 
-                return (
-                  <tr
-                    key={content.id}
-                    className={`border-b border-border/50 hover:bg-accent/30 transition-colors ${idx % 2 === 0 ? "" : "bg-secondary/10"}`}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-0.5 h-8 rounded-full" style={{ backgroundColor: content.clients?.color ?? "#6366f1" }} />
-                        <p className="text-sm font-medium line-clamp-1">{content.title}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="text-sm text-muted-foreground">{content.clients?.name ?? "—"}</span>
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-sm">{platformInfo?.label ?? content.platform}</span>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      {content.scheduled_at ? (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(content.scheduled_at)}
-                        </div>
-                      ) : <span className="text-muted-foreground/40 text-xs">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Select value={content.status} onValueChange={(v) => handleStatusChange(content.id, v)}>
-                        <SelectTrigger className="h-7 border-none bg-transparent p-0 w-auto">
-                          <Badge className={statusInfo?.color}>{statusInfo?.label}</Badge>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CONTENT_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-4 py-3">
-                      {isRejected ? (
-                        <button
-                          onClick={() => setRejectionModal({
-                            title: content.title,
-                            comment: content.approval_comment ?? "Sem motivo informado.",
-                          })}
-                          className={cn(
-                            "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium transition-opacity hover:opacity-80",
-                            approvalInfo.color
-                          )}
-                          title="Ver motivo"
-                        >
-                          {approvalInfo.icon}
-                          {approvalInfo.label}
-                        </button>
-                      ) : (
-                        <span className={cn(
-                          "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium",
-                          approvalInfo.color
-                        )}>
-                          {approvalInfo.icon}
-                          {approvalInfo.label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="w-7 h-7">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingContent(content)}>
-                            <Pencil className="w-4 h-4 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          {(approvalKey === "draft" || approvalKey === "rejected") && (
-                            <DropdownMenuItem onClick={() => handleSendForApproval(content.id)}>
-                              <Send className="w-4 h-4 mr-2" />
-                              {approvalKey === "rejected" ? "Reenviar p/ aprovação" : "Enviar p/ aprovação"}
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(content.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div className="text-center py-10 text-muted-foreground text-sm">
-              Nenhum conteúdo encontrado
-            </div>
-          )}
-        </div>
+              return Object.entries(groups).map(([key, group]) => (
+                <div key={key} className="space-y-2">
+                  {/* Week header */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">{group.label}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                      {group.items.length} {group.items.length === 1 ? "conteúdo" : "conteúdos"}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  {/* Table for this week */}
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border bg-secondary/30">
+                          <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Conteúdo</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5 hidden md:table-cell">Cliente</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5 hidden lg:table-cell">Plataforma</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5 hidden md:table-cell">Data</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Status</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Aprovação</th>
+                          <th className="w-10 px-4 py-2.5" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.items.map((content, idx) => {
+                          const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
+                          const platformInfo = PLATFORMS.find(p => p.value === content.platform);
+                          const approvalKey = (content.approval_status ?? "draft") as keyof typeof APPROVAL_INFO;
+                          const approvalInfo = APPROVAL_INFO[approvalKey] ?? APPROVAL_INFO.draft;
+                          const isRejected = approvalKey === "rejected";
+
+                          return (
+                            <tr
+                              key={content.id}
+                              className={`border-b border-border/50 hover:bg-accent/30 transition-colors ${idx % 2 === 0 ? "" : "bg-secondary/10"}`}
+                            >
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-0.5 h-8 rounded-full" style={{ backgroundColor: content.clients?.color ?? "#6366f1" }} />
+                                  <p className="text-sm font-medium line-clamp-1">{content.title}</p>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 hidden md:table-cell">
+                                <span className="text-sm text-muted-foreground">{content.clients?.name ?? "—"}</span>
+                              </td>
+                              <td className="px-4 py-3 hidden lg:table-cell">
+                                <span className="text-sm">{platformInfo?.label ?? content.platform}</span>
+                              </td>
+                              <td className="px-4 py-3 hidden md:table-cell">
+                                {content.scheduled_at ? (
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Calendar className="w-3 h-3" />
+                                    {formatDate(content.scheduled_at)}
+                                  </div>
+                                ) : <span className="text-muted-foreground/40 text-xs">—</span>}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Select value={content.status} onValueChange={(v) => handleStatusChange(content.id, v)}>
+                                  <SelectTrigger className="h-7 border-none bg-transparent p-0 w-auto">
+                                    <Badge className={statusInfo?.color}>{statusInfo?.label}</Badge>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {CONTENT_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="px-4 py-3">
+                                {isRejected ? (
+                                  <button
+                                    onClick={() => setRejectionModal({
+                                      title: content.title,
+                                      comment: content.approval_comment ?? "Sem motivo informado.",
+                                    })}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium transition-opacity hover:opacity-80",
+                                      approvalInfo.color
+                                    )}
+                                  >
+                                    {approvalInfo.icon}
+                                    {approvalInfo.label}
+                                  </button>
+                                ) : (
+                                  <span className={cn(
+                                    "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium",
+                                    approvalInfo.color
+                                  )}>
+                                    {approvalInfo.icon}
+                                    {approvalInfo.label}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="w-7 h-7">
+                                      <MoreHorizontal className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setEditingContent(content)}>
+                                      <Pencil className="w-4 h-4 mr-2" /> Editar
+                                    </DropdownMenuItem>
+                                    {(approvalKey === "draft" || approvalKey === "rejected") && (
+                                      <DropdownMenuItem onClick={() => handleSendForApproval(content.id)}>
+                                        <Send className="w-4 h-4 mr-2" />
+                                        {approvalKey === "rejected" ? "Reenviar p/ aprovação" : "Enviar p/ aprovação"}
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleDelete(content.id)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        )}
 
         {editingContent && (
           <ContentFormDialog
