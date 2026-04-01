@@ -87,12 +87,33 @@ export function ContentsList({ initialContents, clients }: Props) {
   }, [initialContents]);
 
   const [search, setSearch] = useState("");
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterClient, setFilterClient] = useState("all");
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [filterApproval, setFilterApproval] = useState("all");
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [rejectionModal, setRejectionModal] = useState<{ title: string; comment: string } | null>(null);
+
+  // Build list of months that have contents
+  const availableMonths = Array.from(new Set(
+    contents
+      .filter(c => c.scheduled_at)
+      .map(c => {
+        const d = new Date(c.scheduled_at!);
+        return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+      })
+  )).sort();
+
+  function monthLabel(ym: string) {
+    const [year, month] = ym.split("-");
+    const date = new Date(Number(year), Number(month) - 1, 1);
+    const label = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
 
   const filtered = contents.filter((c) => {
     const matchSearch = c.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -101,7 +122,12 @@ export function ContentsList({ initialContents, clients }: Props) {
     const matchClient = filterClient === "all" || c.client_id === filterClient;
     const matchPlatform = filterPlatform === "all" || c.platform === filterPlatform;
     const matchApproval = filterApproval === "all" || (c.approval_status ?? "draft") === filterApproval;
-    return matchSearch && matchStatus && matchClient && matchPlatform && matchApproval;
+    const matchMonth = filterMonth === "all"
+      ? true
+      : c.scheduled_at
+        ? `${new Date(c.scheduled_at).getUTCFullYear()}-${String(new Date(c.scheduled_at).getUTCMonth() + 1).padStart(2, "0")}` === filterMonth
+        : false;
+    return matchSearch && matchStatus && matchClient && matchPlatform && matchApproval && matchMonth;
   });
 
   async function handleDelete(id: string) {
@@ -150,6 +176,35 @@ export function ContentsList({ initialContents, clients }: Props) {
   return (
     <TooltipProvider>
       <div className="space-y-4">
+        {/* Month selector */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setFilterMonth("all")}
+            className={cn(
+              "shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors",
+              filterMonth === "all"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+            )}
+          >
+            Todos os meses
+          </button>
+          {availableMonths.map(ym => (
+            <button
+              key={ym}
+              onClick={() => setFilterMonth(ym)}
+              className={cn(
+                "shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                filterMonth === ym
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+              )}
+            >
+              {monthLabel(ym)}
+            </button>
+          ))}
+        </div>
+
         {/* Filters */}
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-48">
