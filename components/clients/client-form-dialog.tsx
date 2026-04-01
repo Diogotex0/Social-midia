@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +28,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client?: Client;
+  onSuccess?: (client: Client & { portal_token?: string | null }) => void;
 }
 
 const CLIENT_COLORS = [
@@ -37,8 +37,7 @@ const CLIENT_COLORS = [
   "#3b82f6", "#06b6d4",
 ];
 
-export function ClientFormDialog({ open, onOpenChange, client }: Props) {
-  const router = useRouter();
+export function ClientFormDialog({ open, onOpenChange, client, onSuccess }: Props) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -83,17 +82,26 @@ export function ClientFormDialog({ open, onOpenChange, client }: Props) {
       color: form.color,
     };
 
-    const { error } = isEdit
-      ? await supabase.from("clients").update(payload).eq("id", client.id)
-      : await supabase.from("clients").insert(payload);
-
-    if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    if (isEdit) {
+      const { data, error } = await supabase.from("clients").update(payload).eq("id", client.id).select().single();
+      if (error) {
+        toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Cliente atualizado!" });
+        onOpenChange(false);
+        onSuccess?.(data);
+      }
     } else {
-      toast({ title: isEdit ? "Cliente atualizado!" : "Cliente criado!" });
-      onOpenChange(false);
-      router.refresh();
+      const { data, error } = await supabase.from("clients").insert(payload).select().single();
+      if (error) {
+        toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Cliente criado!" });
+        onOpenChange(false);
+        onSuccess?.(data);
+      }
     }
+
     setLoading(false);
   }
 
