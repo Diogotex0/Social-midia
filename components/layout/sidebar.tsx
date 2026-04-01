@@ -17,7 +17,7 @@ import {
   LogOut,
   ChevronRight,
   Loader2,
-  ArrowUpRight,
+  X,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
@@ -36,22 +36,27 @@ const NAV_ITEMS = [
   { href: "/metrics", label: "Métricas", icon: BarChart2 },
 ];
 
-export function Sidebar() {
+interface Props {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [navigating, setNavigating] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     setNavigating(null);
+    onClose?.();
   }, [pathname]);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        // Usa dados da sessão imediatamente
         setProfile({
           id: user.id,
           email: user.email ?? "",
@@ -60,7 +65,6 @@ export function Sidebar() {
           created_at: "",
           updated_at: "",
         });
-        // Tenta buscar perfil completo em background
         supabase
           .from("profiles")
           .select("*")
@@ -78,13 +82,28 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col bg-sidebar border-r border-sidebar-border z-30">
+    <aside
+      className={cn(
+        "fixed left-0 top-0 h-screen w-60 flex flex-col bg-sidebar border-r border-sidebar-border z-50 transition-transform duration-300",
+        // Desktop: always visible
+        "lg:translate-x-0",
+        // Mobile: slide in/out based on isOpen
+        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      )}
+    >
       {/* Logo */}
-      <div className="px-4 py-5 border-b border-sidebar-border">
+      <div className="px-4 py-5 border-b border-sidebar-border flex items-center justify-between">
         <span className="text-lg font-bold tracking-tight">
           <span className="text-foreground">Social</span>
           <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">Next</span>
         </span>
+        {/* Close button - mobile only */}
+        <button
+          onClick={onClose}
+          className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Navigation */}

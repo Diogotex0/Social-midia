@@ -41,7 +41,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Dashboard" subtitle={`Bem-vindo de volta! Hoje é ${new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}`} />
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
         <DashboardStats
           totalClients={totalClients ?? 0}
           activeClients={activeClients ?? 0}

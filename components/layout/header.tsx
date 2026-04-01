@@ -1,10 +1,11 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useSidebar } from "./sidebar-context";
 
 interface HeaderProps {
   title: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle, action }: HeaderProps) {
+  const { open } = useSidebar();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -29,10 +31,18 @@ export function Header({ title, subtitle, action }: HeaderProps) {
   }, []);
 
   return (
-    <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur sticky top-0 z-20">
-      <div>
-        <h1 className="text-base font-semibold">{title}</h1>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+    <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-background/80 backdrop-blur sticky top-0 z-20">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={open}
+          className="lg:hidden text-muted-foreground hover:text-foreground transition-colors p-1 -ml-1"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-base font-semibold leading-tight">{title}</h1>
+          {subtitle && <p className="text-xs text-muted-foreground hidden sm:block">{subtitle}</p>}
+        </div>
       </div>
       <div className="flex items-center gap-2">
         {action}
