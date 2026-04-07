@@ -51,12 +51,12 @@ function ContentPreview({ content }: { content: ContentItem }) {
     <div className="w-64 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50">
       {/* Media preview or color header */}
       {firstMedia ? (
-        <div className="overflow-hidden bg-zinc-950 flex items-center justify-center">
+        <div className="overflow-hidden bg-zinc-950 flex items-center justify-center h-40">
           {firstMedia.match(/\.(mp4|mov|webm)$/i) ? (
-            <video src={firstMedia} className="w-full max-h-52 object-contain" muted />
+            <video src={firstMedia} className="h-full w-full object-contain" muted />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={firstMedia} alt="" className="w-full object-contain" />
+            <img src={firstMedia} alt="" className="h-full w-full object-contain" />
           )}
         </div>
       ) : (
@@ -254,8 +254,10 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
                   style={{ borderLeftColor: content.clients?.color, borderLeftWidth: 3 }}
                 >
                   {firstMedia && !firstMedia.match(/\.(mp4|mov|webm)$/i) && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={firstMedia} alt="" className="w-full h-24 object-cover" />
+                    <div className="bg-zinc-950 flex items-center justify-center h-32">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={firstMedia} alt="" className="h-full w-full object-contain" />
+                    </div>
                   )}
                   <div className="p-3">
                     <p className="text-xs font-medium truncate">{content.title}</p>
