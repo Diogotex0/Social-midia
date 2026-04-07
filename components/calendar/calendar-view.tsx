@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   isSameMonth, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths, isToday,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Instagram, Youtube, Facebook, Twitter, Linkedin, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,22 +18,83 @@ import { cn } from "@/lib/utils";
 interface ContentItem {
   id: string;
   title: string;
+  caption?: string | null;
+  hashtags?: string | null;
   platform: string;
   format: string;
   status: string;
   scheduled_at: string;
   client_id: string;
   clients: { id: string; name: string; color: string } | null;
+  media_urls?: string[] | null;
 }
 
 interface ClientRef { id: string; name: string; color: string }
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+const PLATFORM_ICONS: Record<string, React.ReactNode> = {
+  instagram: <Instagram className="w-3 h-3" />,
+  youtube: <Youtube className="w-3 h-3" />,
+  facebook: <Facebook className="w-3 h-3" />,
+  twitter: <Twitter className="w-3 h-3" />,
+  linkedin: <Linkedin className="w-3 h-3" />,
+};
+
+function ContentPreview({ content }: { content: ContentItem }) {
+  const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
+  const platformInfo = PLATFORMS.find(p => p.value === content.platform);
+  const color = content.clients?.color ?? "#6366f1";
+  const firstMedia = content.media_urls?.[0];
+
+  return (
+    <div className="w-64 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50">
+      {/* Media preview or color header */}
+      {firstMedia ? (
+        <div className="h-36 overflow-hidden">
+          {firstMedia.match(/\.(mp4|mov|webm)$/i) ? (
+            <video src={firstMedia} className="w-full h-full object-cover" muted />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={firstMedia} alt="" className="w-full h-full object-cover" />
+          )}
+        </div>
+      ) : (
+        <div className="h-2" style={{ backgroundColor: color }} />
+      )}
+
+      <div className="p-3 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold leading-tight line-clamp-2">{content.title}</p>
+          <span className="shrink-0 text-muted-foreground">{PLATFORM_ICONS[content.platform]}</span>
+        </div>
+
+        {content.caption && (
+          <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">{content.caption}</p>
+        )}
+
+        {content.hashtags && (
+          <p className="text-xs text-primary/70 line-clamp-2">{content.hashtags}</p>
+        )}
+
+        <div className="flex items-center gap-2 pt-1">
+          <Badge className={`text-[10px] ${statusInfo?.color}`}>{statusInfo?.label}</Badge>
+          <span className="text-[10px] text-muted-foreground">{platformInfo?.label}</span>
+          {content.clients && (
+            <span className="text-[10px] text-muted-foreground truncate">{content.clients.name}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CalendarView({ contents, clients }: { contents: ContentItem[]; clients: ClientRef[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filterClient, setFilterClient] = useState("all");
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [hoveredContent, setHoveredContent] = useState<{ content: ContentItem; x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const filtered = contents.filter(c =>
     filterClient === "all" || c.client_id === filterClient
@@ -52,10 +113,33 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
 
   const selectedContents = selectedDay ? getContentsForDay(selectedDay) : [];
 
+  function handleContentHover(e: React.MouseEvent, content: ContentItem) {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setHoveredContent({
+      content,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={containerRef} style={{ position: "relative" }}>
+      {/* Hover preview portal */}
+      {hoveredContent && (
+        <div
+          className="absolute pointer-events-none z-50"
+          style={{
+            left: Math.min(hoveredContent.x + 12, (containerRef.current?.clientWidth ?? 800) - 280),
+            top: hoveredContent.y + 12,
+          }}
+        >
+          <ContentPreview content={hoveredContent.content} />
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
             <ChevronLeft className="w-4 h-4" />
@@ -84,7 +168,6 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Calendar grid */}
         <div className="lg:col-span-3 bg-card border border-border rounded-xl overflow-hidden">
-          {/* Weekdays header */}
           <div className="grid grid-cols-7 border-b border-border">
             {WEEKDAYS.map(day => (
               <div key={day} className="py-2 text-center text-xs font-medium text-muted-foreground">
@@ -93,7 +176,6 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
             ))}
           </div>
 
-          {/* Days grid */}
           <div className="grid grid-cols-7">
             {days.map((day, idx) => {
               const dayContents = getContentsForDay(day);
@@ -121,23 +203,22 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
                     {format(day, "d")}
                   </span>
                   <div className="mt-1 space-y-0.5">
-                    {dayContents.slice(0, 3).map(content => {
-                      const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
-                      return (
-                        <div
-                          key={content.id}
-                          className="text-[10px] px-1.5 py-0.5 rounded truncate font-medium"
-                          style={{
-                            backgroundColor: (content.clients?.color ?? "#6366f1") + "25",
-                            color: content.clients?.color ?? "#6366f1",
-                            borderLeft: `2px solid ${content.clients?.color ?? "#6366f1"}`,
-                          }}
-                          title={content.title}
-                        >
-                          {content.title}
-                        </div>
-                      );
-                    })}
+                    {dayContents.slice(0, 3).map(content => (
+                      <div
+                        key={content.id}
+                        className="text-[10px] px-1.5 py-0.5 rounded truncate font-medium cursor-pointer"
+                        style={{
+                          backgroundColor: (content.clients?.color ?? "#6366f1") + "25",
+                          color: content.clients?.color ?? "#6366f1",
+                          borderLeft: `2px solid ${content.clients?.color ?? "#6366f1"}`,
+                        }}
+                        onMouseEnter={(e) => { e.stopPropagation(); handleContentHover(e, content); }}
+                        onMouseLeave={() => setHoveredContent(null)}
+                        onMouseMove={(e) => { e.stopPropagation(); handleContentHover(e, content); }}
+                      >
+                        {content.title}
+                      </div>
+                    ))}
                     {dayContents.length > 3 && (
                       <p className="text-[10px] text-muted-foreground px-1">+{dayContents.length - 3} mais</p>
                     )}
@@ -166,17 +247,27 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
             {selectedContents.map(content => {
               const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
               const platformInfo = PLATFORMS.find(p => p.value === content.platform);
+              const firstMedia = content.media_urls?.[0];
               return (
                 <div
                   key={content.id}
-                  className="p-3 rounded-lg border border-border/50 hover:border-border transition-colors"
+                  className="rounded-lg border border-border/50 hover:border-border transition-colors overflow-hidden"
                   style={{ borderLeftColor: content.clients?.color, borderLeftWidth: 3 }}
                 >
-                  <p className="text-xs font-medium truncate">{content.title}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{content.clients?.name}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge className={`text-[10px] ${statusInfo?.color}`}>{statusInfo?.label}</Badge>
-                    <span className="text-[10px] text-muted-foreground">{platformInfo?.label}</span>
+                  {firstMedia && !firstMedia.match(/\.(mp4|mov|webm)$/i) && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={firstMedia} alt="" className="w-full h-24 object-cover" />
+                  )}
+                  <div className="p-3">
+                    <p className="text-xs font-medium truncate">{content.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{content.clients?.name}</p>
+                    {content.caption && (
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{content.caption}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className={`text-[10px] ${statusInfo?.color}`}>{statusInfo?.label}</Badge>
+                      <span className="text-[10px] text-muted-foreground">{platformInfo?.label}</span>
+                    </div>
                   </div>
                 </div>
               );
@@ -185,7 +276,6 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
         </div>
       </div>
 
-      {/* Legend */}
       <div className="flex items-center gap-4 flex-wrap">
         {CONTENT_STATUSES.map(s => (
           <div key={s.value} className="flex items-center gap-1.5">

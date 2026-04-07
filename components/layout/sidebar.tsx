@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Loader2,
   X,
+  Layers,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { href: "/finances", label: "Financeiro", icon: DollarSign },
   { href: "/notifications", label: "Notificações", icon: Bell },
   { href: "/metrics", label: "Métricas", icon: BarChart2 },
+  { href: "/feed-preview", label: "Feed Preview", icon: Layers },
 ];
 
 interface Props {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X, ImageIcon, Film, ChevronLeft, ChevronRight } from "lucide-react";
 import { PLATFORMS, FORMATS, CONTENT_STATUSES, PILLARS } from "@/types";
 import type { Content } from "@/types";
 
@@ -24,7 +24,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clients: ClientRef[];
-  content?: Content;
+  content?: Content & { media_urls?: string[] | null };
   defaultClientId?: string;
 }
 
@@ -32,6 +32,11 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<string[]>(content?.media_urls ?? []);
+  const [carouselIdx, setCarouselIdx] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [form, setForm] = useState({
     client_id: content?.client_id ?? defaultClientId ?? "",
     title: content?.title ?? "",
@@ -46,6 +51,36 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
   });
 
   const isEdit = !!content;
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploadingMedia(true);
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploadingMedia(false); return; }
+
+    const uploaded: string[] = [];
+    for (const file of files) {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("content-media").upload(path, file);
+      if (!error) {
+        const { data } = supabase.storage.from("content-media").getPublicUrl(path);
+        uploaded.push(data.publicUrl);
+      }
+    }
+
+    setMediaUrls(prev => [...prev, ...uploaded]);
+    setUploadingMedia(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removeMedia(idx: number) {
+    setMediaUrls(prev => prev.filter((_, i) => i !== idx));
+    setCarouselIdx(prev => Math.max(0, prev - 1));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +103,7 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
       status: form.status as Content["status"],
       scheduled_at: form.scheduled_at ? `${form.scheduled_at}T12:00:00.000Z` : null,
       notes: form.notes || null,
+      media_urls: mediaUrls.length > 0 ? mediaUrls : null,
     };
 
     const { error } = isEdit
@@ -84,6 +120,9 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
     setLoading(false);
   }
 
+  const currentMedia = mediaUrls[carouselIdx];
+  const isVideo = currentMedia?.match(/\.(mp4|mov|webm)$/i);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -92,12 +131,106 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
+
+            {/* Media upload */}
+            <div className="col-span-2 space-y-2">
+              <Label>Mídia (fotos, vídeos, carrossel)</Label>
+
+              {mediaUrls.length > 0 && (
+                <div className="relative rounded-xl overflow-hidden border border-border bg-black">
+                  <div className="aspect-square max-h-64 flex items-center justify-center">
+                    {isVideo ? (
+                      <video src={currentMedia} controls className="max-h-64 max-w-full" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={currentMedia} alt="" className="max-h-64 max-w-full object-contain" />
+                    )}
+                  </div>
+
+                  {/* Carousel controls */}
+                  {mediaUrls.length > 1 && (
+                    <>
+                      <button type="button" onClick={() => setCarouselIdx(i => Math.max(0, i - 1))}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1 text-white hover:bg-black/80">
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button type="button" onClick={() => setCarouselIdx(i => Math.min(mediaUrls.length - 1, i + 1))}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1 text-white hover:bg-black/80">
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        {mediaUrls.map((_, i) => (
+                          <button key={i} type="button" onClick={() => setCarouselIdx(i)}
+                            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === carouselIdx ? "bg-white" : "bg-white/40"}`} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <button type="button" onClick={() => removeMedia(carouselIdx)}
+                    className="absolute top-2 right-2 bg-black/60 rounded-full p-1 text-white hover:bg-red-500/80">
+                    <X className="w-3 h-3" />
+                  </button>
+
+                  <div className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-0.5 text-white text-[10px]">
+                    {carouselIdx + 1}/{mediaUrls.length}
+                  </div>
+                </div>
+              )}
+
+              {/* Thumbnails strip */}
+              {mediaUrls.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {mediaUrls.map((url, i) => (
+                    <button key={i} type="button" onClick={() => setCarouselIdx(i)}
+                      className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === carouselIdx ? "border-primary" : "border-transparent"}`}>
+                      {url.match(/\.(mp4|mov|webm)$/i)
+                        ? <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Film className="w-4 h-4 text-zinc-400" /></div>
+                        // eslint-disable-next-line @next/next/no-img-element
+                        : <img src={url} alt="" className="w-full h-full object-cover" />
+                      }
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              >
+                {uploadingMedia ? (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="flex justify-center gap-2 text-muted-foreground">
+                      <ImageIcon className="w-5 h-5" />
+                      <Film className="w-5 h-5" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Clique para adicionar fotos ou vídeos
+                    </p>
+                    <p className="text-xs text-muted-foreground/60">
+                      JPG, PNG, MP4, MOV — múltiplos arquivos para carrossel
+                    </p>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </div>
+
             <div className="col-span-2 space-y-2">
               <Label>Cliente *</Label>
               <Select value={form.client_id} onValueChange={(v) => setForm({ ...form, client_id: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                 <SelectContent>
                   {clients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -107,13 +240,8 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="title">Título *</Label>
-              <Input
-                id="title"
-                placeholder="Título do conteúdo"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                required
-              />
+              <Input id="title" placeholder="Título do conteúdo" value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })} required />
             </div>
             <div className="space-y-2">
               <Label>Plataforma</Label>
@@ -153,49 +281,29 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="scheduled_at">Data de Publicação</Label>
-              <Input
-                id="scheduled_at"
-                type="date"
-                value={form.scheduled_at}
-                onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
-              />
+              <Input id="scheduled_at" type="date" value={form.scheduled_at}
+                onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })} />
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="caption">Legenda</Label>
-              <Textarea
-                id="caption"
-                placeholder="Escreva a legenda do post..."
-                value={form.caption}
-                onChange={(e) => setForm({ ...form, caption: e.target.value })}
-                rows={4}
-              />
+              <Textarea id="caption" placeholder="Escreva a legenda do post..." value={form.caption}
+                onChange={(e) => setForm({ ...form, caption: e.target.value })} rows={4} />
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="hashtags">Hashtags</Label>
-              <Input
-                id="hashtags"
-                placeholder="#exemplo #social #marketing"
-                value={form.hashtags}
-                onChange={(e) => setForm({ ...form, hashtags: e.target.value })}
-              />
+              <Input id="hashtags" placeholder="#exemplo #social #marketing" value={form.hashtags}
+                onChange={(e) => setForm({ ...form, hashtags: e.target.value })} />
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="notes">Notas internas</Label>
-              <Textarea
-                id="notes"
-                placeholder="Observações sobre este conteúdo..."
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                rows={2}
-              />
+              <Textarea id="notes" placeholder="Observações sobre este conteúdo..." value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading || !form.client_id}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="submit" disabled={loading || uploadingMedia || !form.client_id}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Salvar alterações" : "Criar conteúdo"}
             </Button>
