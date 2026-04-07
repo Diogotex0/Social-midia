@@ -93,7 +93,8 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filterClient, setFilterClient] = useState("all");
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [hoveredContent, setHoveredContent] = useState<{ content: ContentItem; x: number; y: number } | null>(null);
+  const [hoveredContent, setHoveredContent] = useState<ContentItem | null>(null);
+  const [previewPos, setPreviewPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const filtered = contents.filter(c =>
@@ -113,25 +114,26 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
 
   const selectedContents = selectedDay ? getContentsForDay(selectedDay) : [];
 
-  function handleContentHover(e: React.MouseEvent, content: ContentItem) {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setHoveredContent({
-      content,
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
+  function handleContentMouseEnter(e: React.MouseEvent, content: ContentItem) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (!containerRect) return;
+    const x = rect.right - containerRect.left + 8;
+    const y = rect.top - containerRect.top;
+    const clampedX = Math.min(x, (containerRef.current?.clientWidth ?? 800) - 272);
+    setPreviewPos({ x: clampedX, y });
+    setHoveredContent(content);
   }
 
   return (
     <div className="space-y-4" ref={containerRef} style={{ position: "relative" }}>
-      {/* Hover preview portal */}
+      {/* Hover preview */}
       {hoveredContent && (
         <div
           className="absolute pointer-events-none z-50"
           style={{
-            left: Math.min(hoveredContent.x + 12, (containerRef.current?.clientWidth ?? 800) - 280),
-            top: hoveredContent.y + 12,
+            left: previewPos.x,
+            top: previewPos.y,
           }}
         >
           <ContentPreview content={hoveredContent.content} />
@@ -212,9 +214,8 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
                           color: content.clients?.color ?? "#6366f1",
                           borderLeft: `2px solid ${content.clients?.color ?? "#6366f1"}`,
                         }}
-                        onMouseEnter={(e) => { e.stopPropagation(); handleContentHover(e, content); }}
+                        onMouseEnter={(e) => { e.stopPropagation(); handleContentMouseEnter(e, content); }}
                         onMouseLeave={() => setHoveredContent(null)}
-                        onMouseMove={(e) => { e.stopPropagation(); handleContentHover(e, content); }}
                       >
                         {content.title}
                       </div>
