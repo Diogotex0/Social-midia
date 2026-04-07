@@ -132,97 +132,6 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
 
-            {/* Media upload */}
-            <div className="col-span-2 space-y-2">
-              <Label>Mídia (fotos, vídeos, carrossel)</Label>
-
-              {mediaUrls.length > 0 && (
-                <div className="relative rounded-xl overflow-hidden border border-border bg-black">
-                  <div className="aspect-square max-h-64 flex items-center justify-center">
-                    {isVideo ? (
-                      <video src={currentMedia} controls className="max-h-64 max-w-full" />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={currentMedia} alt="" className="max-h-64 max-w-full object-contain" />
-                    )}
-                  </div>
-
-                  {/* Carousel controls */}
-                  {mediaUrls.length > 1 && (
-                    <>
-                      <button type="button" onClick={() => setCarouselIdx(i => Math.max(0, i - 1))}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1 text-white hover:bg-black/80">
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button type="button" onClick={() => setCarouselIdx(i => Math.min(mediaUrls.length - 1, i + 1))}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1 text-white hover:bg-black/80">
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                        {mediaUrls.map((_, i) => (
-                          <button key={i} type="button" onClick={() => setCarouselIdx(i)}
-                            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === carouselIdx ? "bg-white" : "bg-white/40"}`} />
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  <button type="button" onClick={() => removeMedia(carouselIdx)}
-                    className="absolute top-2 right-2 bg-black/60 rounded-full p-1 text-white hover:bg-red-500/80">
-                    <X className="w-3 h-3" />
-                  </button>
-
-                  <div className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-0.5 text-white text-[10px]">
-                    {carouselIdx + 1}/{mediaUrls.length}
-                  </div>
-                </div>
-              )}
-
-              {/* Thumbnails strip */}
-              {mediaUrls.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {mediaUrls.map((url, i) => (
-                    <button key={i} type="button" onClick={() => setCarouselIdx(i)}
-                      className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === carouselIdx ? "border-primary" : "border-transparent"}`}>
-                      {url.match(/\.(mp4|mov|webm)$/i)
-                        ? <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Film className="w-4 h-4 text-zinc-400" /></div>
-                        // eslint-disable-next-line @next/next/no-img-element
-                        : <img src={url} alt="" className="w-full h-full object-cover" />
-                      }
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <label className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors block">
-                {uploadingMedia ? (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="flex justify-center gap-2 text-muted-foreground">
-                      <ImageIcon className="w-5 h-5" />
-                      <Film className="w-5 h-5" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Clique para adicionar fotos ou vídeos
-                    </p>
-                    <p className="text-xs text-muted-foreground/60">
-                      JPG, PNG, MP4, MOV — múltiplos arquivos para carrossel
-                    </p>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-              </label>
-            </div>
-
             <div className="col-span-2 space-y-2">
               <Label>Cliente *</Label>
               <Select value={form.client_id} onValueChange={(v) => setForm({ ...form, client_id: v })}>
@@ -294,6 +203,77 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
               <Label htmlFor="notes">Notas internas</Label>
               <Textarea id="notes" placeholder="Observações sobre este conteúdo..." value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
+            </div>
+
+            {/* Media upload */}
+            <div className="col-span-2 space-y-2">
+              <Label>Mídia (fotos, vídeos, carrossel)</Label>
+
+              {mediaUrls.length > 0 && (
+                <div className="relative rounded-xl overflow-hidden border border-border bg-black">
+                  <div className="aspect-square max-h-64 flex items-center justify-center">
+                    {isVideo ? (
+                      <video src={currentMedia} controls className="max-h-64 max-w-full" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={currentMedia} alt="" className="max-h-64 max-w-full object-contain" />
+                    )}
+                  </div>
+                  {mediaUrls.length > 1 && (
+                    <>
+                      <button type="button" onClick={() => setCarouselIdx(i => Math.max(0, i - 1))}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1 text-white hover:bg-black/80">
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button type="button" onClick={() => setCarouselIdx(i => Math.min(mediaUrls.length - 1, i + 1))}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 rounded-full p-1 text-white hover:bg-black/80">
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        {mediaUrls.map((_, i) => (
+                          <button key={i} type="button" onClick={() => setCarouselIdx(i)}
+                            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === carouselIdx ? "bg-white" : "bg-white/40"}`} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  <button type="button" onClick={() => removeMedia(carouselIdx)}
+                    className="absolute top-2 right-2 bg-black/60 rounded-full p-1 text-white hover:bg-red-500/80">
+                    <X className="w-3 h-3" />
+                  </button>
+                  <div className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-0.5 text-white text-[10px]">
+                    {carouselIdx + 1}/{mediaUrls.length}
+                  </div>
+                </div>
+              )}
+              {mediaUrls.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {mediaUrls.map((url, i) => (
+                    <button key={i} type="button" onClick={() => setCarouselIdx(i)}
+                      className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === carouselIdx ? "border-primary" : "border-transparent"}`}>
+                      {url.match(/\.(mp4|mov|webm)$/i)
+                        ? <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Film className="w-4 h-4 text-zinc-400" /></div>
+                        // eslint-disable-next-line @next/next/no-img-element
+                        : <img src={url} alt="" className="w-full h-full object-cover" />
+                      }
+                    </button>
+                  ))}
+                </div>
+              )}
+              <label className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors block">
+                {uploadingMedia ? (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <ImageIcon className="w-4 h-4" />
+                    <Film className="w-4 h-4" />
+                    <span className="text-sm">Adicionar fotos ou vídeos</span>
+                  </div>
+                )}
+                <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileUpload} />
+              </label>
             </div>
           </div>
 
