@@ -194,10 +194,7 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
                 </div>
               )}
 
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
-              >
+              <label className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors block">
                 {uploadingMedia ? (
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" /> Enviando...
@@ -216,15 +213,14 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
                     </p>
                   </div>
                 )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                className="hidden"
-                onChange={handleFileUpload}
-              />
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </label>
             </div>
 
             <div className="col-span-2 space-y-2">

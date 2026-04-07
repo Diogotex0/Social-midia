@@ -116,12 +116,10 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
 
   function handleContentMouseEnter(e: React.MouseEvent, content: ContentItem) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    if (!containerRect) return;
-    const x = rect.right - containerRect.left + 8;
-    const y = rect.top - containerRect.top;
-    const clampedX = Math.min(x, (containerRef.current?.clientWidth ?? 800) - 272);
-    setPreviewPos({ x: clampedX, y });
+    // Use fixed positioning based on screen coords to avoid any overlap/flicker
+    const x = Math.min(rect.right + 8, window.innerWidth - 272);
+    const y = Math.min(rect.top, window.innerHeight - 320);
+    setPreviewPos({ x, y });
     setHoveredContent(content);
   }
 
@@ -130,7 +128,7 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
       {/* Hover preview */}
       {hoveredContent && (
         <div
-          className="absolute pointer-events-none z-50"
+          className="fixed pointer-events-none z-50"
           style={{
             left: previewPos.x,
             top: previewPos.y,
