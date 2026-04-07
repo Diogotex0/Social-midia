@@ -292,8 +292,8 @@ export function ContentsList({ initialContents, clients }: Props) {
                         </tr>
                       </thead>
                       <tbody>
-                        {group.items.map((content, idx) => {
-                          const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
+                        {group.items.filter(Boolean).map((content, idx) => {
+                          const statusInfo = CONTENT_STATUSES.find(s => s.value === content?.status);
                           const platformInfo = PLATFORMS.find(p => p.value === content.platform);
                           const approvalKey = (content.approval_status ?? "draft") as keyof typeof APPROVAL_INFO;
                           const approvalInfo = APPROVAL_INFO[approvalKey] ?? APPROVAL_INFO.draft;

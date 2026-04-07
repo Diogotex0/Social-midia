@@ -134,7 +134,7 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
             top: previewPos.y,
           }}
         >
-          <ContentPreview content={hoveredContent.content} />
+          <ContentPreview content={hoveredContent} />
         </div>
       )}
 
