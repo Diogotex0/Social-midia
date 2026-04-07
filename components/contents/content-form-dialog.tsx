@@ -210,13 +210,13 @@ export function ContentFormDialog({ open, onOpenChange, clients, content, defaul
               <Label>Mídia (fotos, vídeos, carrossel)</Label>
 
               {mediaUrls.length > 0 && (
-                <div className="relative rounded-xl overflow-hidden border border-border bg-black">
-                  <div className="aspect-square max-h-64 flex items-center justify-center">
+                <div className="relative rounded-xl overflow-hidden border border-border bg-zinc-900">
+                  <div className="flex items-center justify-center">
                     {isVideo ? (
-                      <video src={currentMedia} controls className="max-h-64 max-w-full" />
+                      <video src={currentMedia} controls className="max-h-80 w-full object-contain" />
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={currentMedia} alt="" className="max-h-64 max-w-full object-contain" />
+                      <img src={currentMedia} alt="" className="max-h-80 w-full object-contain" />
                     )}
                   </div>
                   {mediaUrls.length > 1 && (

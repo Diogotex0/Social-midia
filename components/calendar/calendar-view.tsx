@@ -51,12 +51,12 @@ function ContentPreview({ content }: { content: ContentItem }) {
     <div className="w-64 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50">
       {/* Media preview or color header */}
       {firstMedia ? (
-        <div className="h-36 overflow-hidden">
+        <div className="overflow-hidden bg-zinc-950 flex items-center justify-center">
           {firstMedia.match(/\.(mp4|mov|webm)$/i) ? (
-            <video src={firstMedia} className="w-full h-full object-cover" muted />
+            <video src={firstMedia} className="w-full max-h-52 object-contain" muted />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={firstMedia} alt="" className="w-full h-full object-cover" />
+            <img src={firstMedia} alt="" className="w-full object-contain" />
           )}
         </div>
       ) : (
