@@ -40,8 +40,8 @@ export function UpcomingTasks({ contents }: { contents: ContentWithClient[] }) {
         </Link>
       </CardHeader>
       <CardContent className="space-y-2">
-        {contents.map((content) => {
-          const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
+        {contents.filter(Boolean).map((content) => {
+          const statusInfo = CONTENT_STATUSES.find(s => s.value === content?.status);
           return (
             <div key={content.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/50">
               <div

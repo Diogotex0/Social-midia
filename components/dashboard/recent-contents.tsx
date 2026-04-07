@@ -43,9 +43,9 @@ export function RecentContents({ contents }: { contents: ContentWithClient[] }) 
         </Link>
       </CardHeader>
       <CardContent className="space-y-2">
-        {contents.map((content) => {
-          const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
-          const platformInfo = PLATFORMS.find(p => p.value === content.platform);
+        {contents.filter(Boolean).map((content) => {
+          const statusInfo = CONTENT_STATUSES.find(s => s.value === content?.status);
+          const platformInfo = PLATFORMS.find(p => p.value === content?.platform);
           return (
             <Link
               key={content.id}
