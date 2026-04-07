@@ -130,6 +130,7 @@ export function FeedPreview({ initialContents, clients }: { initialContents: Con
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const filtered = contents.filter(c =>
+    c &&
     (filterClient === "all" || c.client_id === filterClient) &&
     c.platform === "instagram"
   );

@@ -109,7 +109,7 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
 
   function getContentsForDay(day: Date) {
     const dayStr = format(day, "yyyy-MM-dd");
-    return filtered.filter(c => c.scheduled_at.slice(0, 10) === dayStr);
+    return filtered.filter(c => c?.scheduled_at?.slice(0, 10) === dayStr);
   }
 
   const selectedContents = selectedDay ? getContentsForDay(selectedDay) : [];
@@ -203,7 +203,7 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
                     {format(day, "d")}
                   </span>
                   <div className="mt-1 space-y-0.5">
-                    {dayContents.slice(0, 3).map(content => (
+                    {dayContents.filter(Boolean).slice(0, 3).map(content => (
                       <div
                         key={content.id}
                         className="text-[10px] px-1.5 py-0.5 rounded truncate font-medium cursor-pointer"
@@ -243,7 +243,7 @@ export function CalendarView({ contents, clients }: { contents: ContentItem[]; c
           )}
 
           <div className="space-y-2">
-            {selectedContents.map(content => {
+            {selectedContents.filter(Boolean).map(content => {
               const statusInfo = CONTENT_STATUSES.find(s => s.value === content.status);
               const platformInfo = PLATFORMS.find(p => p.value === content.platform);
               const firstMedia = content.media_urls?.[0];
